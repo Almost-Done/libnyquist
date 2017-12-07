@@ -13,6 +13,8 @@
 *.pdb
 *.log
 
+.vs/
+
 # Visual C++ cache files
 ipch/
 *.opensdf
