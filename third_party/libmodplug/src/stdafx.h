@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <stdint.h>
+#include <strsafe.h>
 
 #define srandom(_seed)  srand(_seed)
 #define random()        rand()

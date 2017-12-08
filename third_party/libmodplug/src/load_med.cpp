@@ -471,7 +471,6 @@ static void MedConvert(MODCOMMAND *p, const MMD0SONGHEADER *pmsh)
 	p->param = param;
 }
 
-
 BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 //---------------------------------------------------------------
 {
@@ -736,7 +735,7 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 				if (maxnamelen > 32) maxnamelen = 32;
 				for (UINT i=0; i<ientries; i++) if (i < m_nSamples)
 				{
-					lstrcpyn(m_szNames[i+1], psznames + i*ientrysz, maxnamelen);
+					StringCchCopyN(m_szNames[i+1], ARRAYSIZE(m_szNames[i+1]), psznames + i*ientrysz, maxnamelen);
 					m_szNames[i+1][31] = '\0';
 				}
 			}
@@ -767,7 +766,7 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 					if (trknamelen > MAX_CHANNELNAME) trknamelen = MAX_CHANNELNAME;
 					if ((trknameofs) && (trknamelen < dwMemLength) && (trknameofs < dwMemLength - trknamelen))
 					{
-						lstrcpyn(ChnSettings[i].szName, (LPCSTR)(lpStream+trknameofs), MAX_CHANNELNAME);
+						StringCchCopyN(ChnSettings[i].szName, ARRAYSIZE(ChnSettings[i].szName), (LPCSTR)(lpStream+trknameofs), MAX_CHANNELNAME);
 						ChnSettings[i].szName[MAX_CHANNELNAME-1] = '\0';
 					}
 				}

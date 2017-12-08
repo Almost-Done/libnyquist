@@ -168,7 +168,7 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
 #ifdef MMCMP_SUPPORT
 		if (bMMCmp)
 		{
-			GlobalFreePtr(lpStream);
+			free((void*)lpStream);
 			lpStream = NULL;
 		}
 #endif
@@ -355,7 +355,7 @@ void CSoundFile::FreePattern(LPVOID pat)
 signed char* CSoundFile::AllocateSample(UINT nbytes)
 //-------------------------------------------
 {
-	signed char * p = (signed char *)GlobalAllocPtr(GHND, (nbytes+39) & ~7);
+	signed char * p = (signed char *)malloc((nbytes+39) & ~7);
 	if (p) p += 16;
 	return p;
 }
@@ -366,10 +366,9 @@ void CSoundFile::FreeSample(LPVOID p)
 {
 	if (p)
 	{
-		GlobalFreePtr(((LPSTR)p)-16);
+		free(((LPSTR)p)-16);
 	}
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 // Misc functions
@@ -378,13 +377,13 @@ void CSoundFile::ResetMidiCfg()
 //-----------------------------
 {
 	memset(&m_MidiCfg, 0, sizeof(m_MidiCfg));
-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_START*32], "FF");
-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_STOP*32], "FC");
-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEON*32], "9c n v");
-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEOFF*32], "9c n 0");
-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_PROGRAM*32], "Cc p");
-	lstrcpy(&m_MidiCfg.szMidiSFXExt[0], "F0F000z");
-	for (int iz=0; iz<16; iz++) wsprintf(&m_MidiCfg.szMidiZXXExt[iz*32], "F0F001%02X", iz*8);
+	StringCchCopy(&m_MidiCfg.szMidiGlb[MIDIOUT_START * 32], ARRAYSIZE(m_MidiCfg.szMidiGlb) - MIDIOUT_START * 32, "FF");
+	StringCchCopy(&m_MidiCfg.szMidiGlb[MIDIOUT_STOP * 32], ARRAYSIZE(m_MidiCfg.szMidiGlb) - MIDIOUT_STOP * 32, "FC");
+	StringCchCopy(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEON * 32], ARRAYSIZE(m_MidiCfg.szMidiGlb) - MIDIOUT_NOTEON * 32, "9c n v");
+	StringCchCopy(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEOFF * 32], ARRAYSIZE(m_MidiCfg.szMidiGlb) - MIDIOUT_NOTEOFF * 32, "9c n 0");
+	StringCchCopy(&m_MidiCfg.szMidiGlb[MIDIOUT_PROGRAM * 32], ARRAYSIZE(m_MidiCfg.szMidiGlb) - MIDIOUT_PROGRAM * 32, "Cc p");
+	StringCchCopy(&m_MidiCfg.szMidiSFXExt[0], ARRAYSIZE(m_MidiCfg.szMidiSFXExt), "F0F000z");
+	for (int iz=0; iz<16; iz++) StringCchPrintf(&m_MidiCfg.szMidiZXXExt[iz*32], ARRAYSIZE(m_MidiCfg.szMidiZXXExt) - iz*32, "F0F001%02X", iz*8);
 }
 
 
@@ -1770,7 +1769,7 @@ BOOL CSoundFile::SetPatternName(UINT nPat, LPCSTR lpszName)
 	if (nPat >= MAX_PATTERNS) return FALSE;
 	if (lpszName == NULL) return(FALSE);
 
-	if (lpszName) lstrcpyn(szName, lpszName, MAX_PATTERNNAME);
+	if (lpszName) StringCchCopyN(szName, ARRAYSIZE(szName), lpszName, MAX_PATTERNNAME);
 	szName[MAX_PATTERNNAME-1] = 0;
 	if (!m_lpszPatternNames) m_nPatternNames = 0;
 	if (nPat >= m_nPatternNames)
