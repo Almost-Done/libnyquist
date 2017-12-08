@@ -198,6 +198,21 @@ extern int ov_crosslap(OggVorbis_File *vf1,OggVorbis_File *vf2);
 extern int ov_halfrate(OggVorbis_File *vf,int flag);
 extern int ov_halfrate_p(OggVorbis_File *vf);
 
+struct OggVorbis_MemoryFile
+{
+    char* curPtr;
+    char* filePtr;
+    size_t fileSize;
+};
+
+size_t AR_readOgg(void* dst, size_t size1, size_t size2, void* fh);
+
+int AR_seekOgg(void *fh, ogg_int64_t to, int type);
+
+int AR_closeOgg(void* fh);
+
+long AR_tellOgg(void *fh);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

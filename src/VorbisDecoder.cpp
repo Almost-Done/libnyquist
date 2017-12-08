@@ -34,6 +34,29 @@ class VorbisDecoderInternal
     
 public:
     
+    VorbisDecoderInternal(AudioData * d, const std::vector<uint8_t> & memory) : d(d)
+    {
+        // Make a copy of the data
+        data = memory;
+        fileHandle = new OggVorbis_File();
+		
+        // Setup an in-memory file
+        inMemoryFile = std::make_unique<OggVorbis_MemoryFile>();
+        inMemoryFile->curPtr = inMemoryFile->filePtr = reinterpret_cast<char*>(data.data());
+        inMemoryFile->fileSize = data.size();
+
+        // Setup custom callbacks to handle operating on the memory stream
+        ov_callbacks callbacks;
+        callbacks.read_func = AR_readOgg;
+        callbacks.seek_func = AR_seekOgg;
+        callbacks.close_func = AR_closeOgg;
+        callbacks.tell_func = AR_tellOgg;
+
+        int ret = ov_open_callbacks(inMemoryFile.get(), fileHandle, NULL, -1, callbacks);
+
+        initialize();
+    }
+
     VorbisDecoderInternal(AudioData * d, std::string filepath) : d(d)
     {
         fileHandle = new OggVorbis_File();
@@ -67,32 +90,7 @@ public:
         
         // Don't need to fclose() after an open -- vorbis does this internally
         
-        vorbis_info *ovInfo = ov_info(fileHandle, -1);
-        
-        if (ovInfo == nullptr)
-        {
-            throw std::runtime_error("Reading metadata failed");
-        }
-        
-        if (auto r = ov_streams(fileHandle) != 1)
-        {
-            std::cerr << errorAsString(r) << std::endl;
-            throw std::runtime_error( "Unsupported: file contains multiple bitstreams");
-        }
-        
-        d->sampleRate = int(ovInfo->rate);
-        d->channelCount = ovInfo->channels;
-        d->sourceFormat = MakeFormatForBits(32, true, false);
-        d->lengthSeconds = double(getLengthInSeconds());
-        d->frameSize = ovInfo->channels * GetFormatBitsPerSample(d->sourceFormat);
-        
-        // Samples in a single channel
-        auto totalSamples = size_t(getTotalSamples());
-        
-        d->samples.resize(totalSamples * d->channelCount);
-        
-        if (!readInternal(totalSamples))
-            throw std::runtime_error("could not read any data");
+        initialize();
     }
     
     ~VorbisDecoderInternal()
@@ -132,7 +130,6 @@ public:
                     totalFramesRead++;
                 }
             }
-            
         }
         
         return totalFramesRead;
@@ -169,8 +166,40 @@ public:
 private:
     
     NO_COPY(VorbisDecoderInternal);
+
+	void initialize()
+	{
+        vorbis_info *ovInfo = ov_info(fileHandle, -1);
+
+        if (ovInfo == nullptr)
+        {
+            throw std::runtime_error("Reading metadata failed");
+        }
+
+        if (auto r = ov_streams(fileHandle) != 1)
+        {
+            std::cerr << errorAsString(r) << std::endl;
+            throw std::runtime_error("Unsupported: file contains multiple bitstreams");
+        }
+
+        d->sampleRate = int(ovInfo->rate);
+        d->channelCount = ovInfo->channels;
+        d->sourceFormat = MakeFormatForBits(32, true, false);
+        d->lengthSeconds = double(getLengthInSeconds());
+        d->frameSize = ovInfo->channels * GetFormatBitsPerSample(d->sourceFormat);
+
+        // Samples in a single channel
+        auto totalSamples = size_t(getTotalSamples());
+
+        d->samples.resize(totalSamples * d->channelCount);
+
+        if (!readInternal(totalSamples))
+            throw std::runtime_error("could not read any data");
+	}
     
     OggVorbis_File * fileHandle;
+    std::vector<uint8_t> data;
+    std::unique_ptr<OggVorbis_MemoryFile> inMemoryFile;
     AudioData * d;
     
     inline int64_t getTotalSamples() const { return int64_t(ov_pcm_total(const_cast<OggVorbis_File *>(fileHandle), -1)); }
@@ -190,7 +219,7 @@ void VorbisDecoder::LoadFromPath(AudioData * data, const std::string & path)
 
 void VorbisDecoder::LoadFromBuffer(AudioData * data, const std::vector<uint8_t> & memory)
 {
-    throw LoadBufferNotImplEx();
+    VorbisDecoderInternal decoder(data, memory);
 }
 
 std::vector<std::string> VorbisDecoder::GetSupportedFileExtensions()
